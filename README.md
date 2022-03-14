@@ -1,3 +1,3 @@
 # ebnf-citron
 
-A description of this package.
+Convert EBNF to a citron grammar.
