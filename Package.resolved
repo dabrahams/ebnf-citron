@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "citron",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dabrahams/citron.git",
+      "state" : {
+        "branch" : "scanner",
+        "revision" : "80fa1ae79391897b39b91c0c784adaf228ebcac3"
+      }
+    }
+  ],
+  "version" : 2
+}

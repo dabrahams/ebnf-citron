@@ -1,0 +1,30 @@
+%class_name EBNFParser
+
+%default_nonterminal_type Void
+%start_symbol grammar
+
+%token UNRECOGNIZED_CHARACTER.
+%token_type String
+
+%preface {
+  import CitronParserModule
+}
+
+%left_associative OR.
+%left_associative STAR PLUS QUESTION.
+
+grammar ::= rule_list. {}
+rule_list ::= . {}
+rule_list ::= rule_list rule. {}
+
+rule ::= SYMBOL IS_DEFINED_AS expr. {}
+
+expr ::= expr OR expr. {}
+expr ::= LPAREN expr RPAREN. {}
+
+%token_set quantifier STAR PLUS QUESTION.
+expr ::= expr quantifier. {}
+
+%token_set atom SYMBOL LITERAL.
+expr ::= atom. {}
+
