@@ -23,7 +23,7 @@ do {
     try parser.consume(token: Token(id, text, at: position), code: id)
   }
   let r: EBNFParser.CitronResult = try parser.endParsing()
-  print(r.dump)
+  print(r)
 } catch let error {
   print("Error during parsing: \(error)")
 }

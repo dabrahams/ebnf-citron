@@ -13,13 +13,14 @@
   }
 }
 
-%nonterminal_type grammar {EBNF.RuleList}
-%nonterminal_type rule_list {EBNF.RuleList}
-%nonterminal_type rule {EBNF.Rule}
-%nonterminal_type alt_list {EBNF.AltList}
-%nonterminal_type alt {EBNF.Alt}
-%nonterminal_type term_list {EBNF.TermList}
-%nonterminal_type term {EBNF.Term}
+%default_nonterminal_type Any
+// %nonterminal_type grammar {EBNF.RuleList}
+// %nonterminal_type rule_list {EBNF.RuleList}
+// %nonterminal_type rule {EBNF.Rule}
+// %nonterminal_type alt_list {EBNF.AltList}
+// %nonterminal_type alt {EBNF.Alt}
+// %nonterminal_type term_list {EBNF.TermList}
+// %nonterminal_type term {EBNF.Term}
 
 %start_symbol grammar
 
@@ -28,41 +29,32 @@
 
 %preface {
   import CitronParserModule
-    extension Array {
-    func appending(_ e: Element) -> Array {
-      var r = self
-      r.append(e)
-      return r
-    }
-  }
 }
 
 %left_associative OR.
 %left_associative STAR PLUS QUESTION.
 %right_associative IS_DEFINED_AS.
 
-grammar ::= rule_list(l). {l}
-rule_list ::= . {[]}
-rule_list ::= rule_list(l) rule(r). {l.appending(r)}
+grammar ::= rule(l). {[l]}
 
-rule ::= LHS(l) IS_DEFINED_AS alt_list(r). { .init(lhs: l, rhs: r)}
+rule ::= LHS(l) IS_DEFINED_AS alt_list(r). { (lhs: l, rhs: r)}
 
 alt_list ::= alt(a). {[a]}
-alt_list ::= alt_list(l) OR alt(r). {l.appending(r)}
+alt_list ::= alt_list(l) OR alt(r). { (l, r)}
 
 alt ::= term_list(t). {t}
 alt ::= . {[]}
 term_list ::= term(t). {[t]}
-term_list ::= term_list(l) term(r). {l.appending(r)}
-term ::= LPAREN alt_list(g) RPAREN. {.group(g)}
-term ::= SYMBOL(s). {.symbol(s)}
+term_list ::= term_list(l) term(r). {(l, r)}
+term ::= LPAREN alt_list(g) RPAREN. {g}
+term ::= SYMBOL(s). {s}
 term ::= LITERAL(l). {
-  .literal(
+  (
      l.text.dropFirst().dropLast().split(separator: "\\").joined(), 
      position: l.position)
 }
 
 %token_set quantifier STAR PLUS QUESTION.
 term ::= term(t) quantifier(q). {
-  .quantified(t, q.text.first!, position: t.position...q.position)
+  (t, q.text.first!, position: SourceRegion.empty)
 }
