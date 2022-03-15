@@ -1,10 +1,22 @@
 %class_name EBNFParser
 
+%preface {
+  import CitronParserModule
+
+  extension _CitronParserUnexpectedTokenError
+    : CustomDebugStringConvertible
+  {
+    public var debugDescription: String {
+      "UnexpectedToken(token: \(token), tokenCode: \(tokenCode))"
+    }
+  }
+}
+
 %default_nonterminal_type Void
 %start_symbol grammar
 
 %token UNRECOGNIZED_CHARACTER.
-%token_type String
+%token_type Substring
 
 %preface {
   import CitronParserModule
@@ -12,19 +24,23 @@
 
 %left_associative OR.
 %left_associative STAR PLUS QUESTION.
+%right_associative IS_DEFINED_AS.
 
 grammar ::= rule_list. {}
 rule_list ::= . {}
 rule_list ::= rule_list rule. {}
 
-rule ::= SYMBOL IS_DEFINED_AS expr. {}
+rule ::= SYMBOL IS_DEFINED_AS alt_list. {}
 
-expr ::= expr OR expr. {}
-expr ::= LPAREN expr RPAREN. {}
+alt_list ::= alt. {}
+alt_list ::= alt_list OR alt. {}
+
+alt ::= term_list. {}
+term_list ::= term. {}
+term_list ::= term_list term. {}
+term ::= LPAREN alt_list RPAREN. {}
+term ::= SYMBOL. {}
+term ::= LITERAL. {}
 
 %token_set quantifier STAR PLUS QUESTION.
-expr ::= expr quantifier. {}
-
-%token_set atom SYMBOL LITERAL.
-expr ::= atom. {}
-
+term ::= term quantifier. {}

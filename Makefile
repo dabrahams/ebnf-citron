@@ -5,12 +5,16 @@ SWIFTC = swiftc
 SWIFT_FLAGS =
 LCOV_FILE = ./.build/coverage.lcov
 SHELL=/bin/bash
+EBNF=/Users/dave/src/val/Docs/Grammar.ebnf
 
 ifeq ($(OS),Windows_NT)
     PARSER_OPTS =  -Xlinker swiftCore.lib
 else
     PARSER_OPTS =
 endif
+
+run: ${CITRON_PARSER} build
+	swift run ebnf-citron ${EBNF}
 
 build: ${CITRON_PARSER}
 	swift build --enable-test-discovery ${SWIFT_FLAGS}
