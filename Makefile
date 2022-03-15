@@ -13,7 +13,7 @@ else
     PARSER_OPTS =
 endif
 
-run: ${CITRON_PARSER} build
+run: ${CITRON_PARSER}
 	swift run ebnf-citron ${EBNF}
 
 build: ${CITRON_PARSER}
