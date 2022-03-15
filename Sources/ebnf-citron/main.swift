@@ -16,12 +16,13 @@ do {
   let tokens = lexer.tokens(
     in: source, fromFile: sourceFile, unrecognizedToken: .UNRECOGNIZED_CHARACTER)
   let parser = EBNFParser()
-  for (tokenID, tokenText, tokenLocation) in tokens {
-    print("\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
-    try parser.consume(token: tokenText, code: tokenID)
+  for (id, text, position) in tokens {
+    // print(
+    //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
+    try parser.consume(token: Token(id, text, at: position), code: id)
   }
   let r: EBNFParser.CitronResult = try parser.endParsing()
-  print(r)
+  print(r.dump)
 } catch let error {
   print("Error during parsing: \(error)")
 }
