@@ -66,3 +66,7 @@ term ::= LITERAL(l). {
 term ::= term(t) quantifier(q). {
   .quantified(t, q.text.first!, position: t.position...q.position)
 }
+
+/* Local Variables: */
+/* mode: lemon */
+/* End: */
