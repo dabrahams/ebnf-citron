@@ -1,7 +1,7 @@
 import Foundation
 
 if CommandLine.arguments.count != 2 {
-  fatalError("usage: \(CommandLine.arguments[0]) <EBNF grammar file>")
+  fatalError("usage: \(CommandLine.arguments[0]) <EBNF grammar file>", file: #filePath)
 }
 let sourceFile = CommandLine.arguments[1]
 let source: String
@@ -9,7 +9,7 @@ do {
   source = try String(contentsOfFile: sourceFile, encoding: .utf8)
 }
 catch {
-  fatalError("file \(String(reflecting: sourceFile)) not found")
+  fatalError("file \(String(reflecting: sourceFile)) not found", file: #filePath)
 }
 
 do {
@@ -23,6 +23,9 @@ do {
   }
   let r: EBNFParser.CitronResult = try parser.endParsing()
   print(r.dump)
+} catch let e as EBNFParser.UnexpectedTokenError {
+  print("\(e.token.position): error: Unexpected token \(e.tokenCode)")
+  fatalError(file: #filePath)
 } catch let error {
-  print("Error during parsing: \(error)")
+  fatalError("Error during parsing: \(error)", file: #filePath)
 }
