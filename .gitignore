@@ -9,4 +9,5 @@ DerivedData/
 .netrc
 
 /Sources/ebnf-citron/EBNFParser.swift
+/Sources/ebnf-citron/EBNFGrammar.out
 .swiftpm
