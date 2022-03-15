@@ -17,10 +17,10 @@ do {
     in: source, fromFile: sourceFile, unrecognizedToken: .UNRECOGNIZED_CHARACTER)
   let parser = EBNFParser()
   parser.isTracingEnabled = true
-  for (id, text, position) in tokens {
+  for t in tokens {
     // print(
     //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
-    try parser.consume(token: Token(id, text, at: position), code: id)
+    try parser.consume(token: (), code: t.0)
   }
   let r: EBNFParser.CitronResult = try parser.endParsing()
   print(r)

@@ -2,7 +2,6 @@
 
 %preface {
   import CitronParserModule
-  import CitronLexerModule
 
   extension _CitronParserUnexpectedTokenError
     : CustomDebugStringConvertible
@@ -13,17 +12,15 @@
   }
 }
 
-%default_nonterminal_type Any
-
+%default_nonterminal_type Void
 %start_symbol grammar
 
 %token UNRECOGNIZED_CHARACTER.
-%token_type Any
+%token_type Void
+
 
 %preface {
   import CitronParserModule
 }
-
-%right_associative IS_DEFINED_AS.
 
 grammar ::= LHS(l) IS_DEFINED_AS SYMBOL(r). {(l, r)}
