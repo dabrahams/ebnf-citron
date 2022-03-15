@@ -30,12 +30,13 @@ grammar ::= rule_list. {}
 rule_list ::= . {}
 rule_list ::= rule_list rule. {}
 
-rule ::= SYMBOL IS_DEFINED_AS alt_list. {}
+rule ::= LHS IS_DEFINED_AS alt_list. {}
 
 alt_list ::= alt. {}
 alt_list ::= alt_list OR alt. {}
 
 alt ::= term_list. {}
+alt ::= . {}
 term_list ::= term. {}
 term_list ::= term_list term. {}
 term ::= LPAREN alt_list RPAREN. {}

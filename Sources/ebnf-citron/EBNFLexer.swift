@@ -13,7 +13,8 @@ let lexer = Scanner<EBNFParser.CitronTokenCode>(
   patterns: [
     /// A mapping from regular expression pattern to either a coresponding token ID,
     /// or `nil` if the pattern is to be discarded (e.g. for whitespace).
-    #"[-A-Za-z0-9]+"#: .SYMBOL,
+    #"[-_A-Za-z0-9]+(?=\s*::=)"#: .LHS,
+    #"[-_A-Za-z0-9]+"#: .SYMBOL,
     #"'([^\\']|\\.)*'"#: .LITERAL,
 
     // "//" followed by any number of non-newlines (See

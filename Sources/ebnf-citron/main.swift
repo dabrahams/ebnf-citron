@@ -9,7 +9,7 @@ do {
   source = try String(contentsOfFile: sourceFile, encoding: .utf8)
 }
 catch {
-  fatalError("file \(sourceFile.debugDescription) not found")
+  fatalError("file \(String(reflecting: sourceFile)) not found")
 }
 
 do {
@@ -17,8 +17,7 @@ do {
     in: source, fromFile: sourceFile, unrecognizedToken: .UNRECOGNIZED_CHARACTER)
   let parser = EBNFParser()
   for (tokenID, tokenText, tokenLocation) in tokens {
-    print(tokenLocation, tokenText, tokenID)
-    print()
+    print("\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
     try parser.consume(token: tokenText, code: tokenID)
   }
   let r: EBNFParser.CitronResult = try parser.endParsing()
