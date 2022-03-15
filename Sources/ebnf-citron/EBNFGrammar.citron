@@ -23,4 +23,4 @@
   import CitronParserModule
 }
 
-grammar ::= LHS(l) IS_DEFINED_AS SYMBOL(r). {(l, r)}
+grammar ::= LHS(l) IS_DEFINED_AS SYMBOL(r). {()}

@@ -25,5 +25,5 @@ do {
   let r: EBNFParser.CitronResult = try parser.endParsing()
   print(r)
 } catch let error {
-  print("Error during parsing: \(error)")
+  fatalError( "Error during parsing: \(error)", file: #filePath)
 }
