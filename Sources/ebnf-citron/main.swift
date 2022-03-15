@@ -16,6 +16,7 @@ do {
   let tokens = lexer.tokens(
     in: source, fromFile: sourceFile, unrecognizedToken: .UNRECOGNIZED_CHARACTER)
   let parser = EBNFParser()
+  parser.isTracingEnabled = true
   for (id, text, position) in tokens {
     // print(
     //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
