@@ -5,7 +5,7 @@ SWIFTC = swiftc
 SWIFT_FLAGS =
 LCOV_FILE = ./.build/coverage.lcov
 SHELL=/bin/bash
-EBNF=/Users/dave/src/val/Docs/Grammar.ebnf
+EBNF=./Sample.ebnf
 
 ifeq ($(OS),Windows_NT)
     PARSER_OPTS =  -Xlinker swiftCore.lib
