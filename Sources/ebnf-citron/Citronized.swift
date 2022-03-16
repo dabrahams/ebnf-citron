@@ -104,38 +104,35 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
 
     // FIXME: Nix the horrible code duplication in quantifier handling.
     case .quantified(.symbol(let s), let q, _):
-      let sq = String(s.text + String(q))
-      let unquantified = symbol(s)
-      if let r = quantifiedSymbols[sq] { return r }
-      let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
-      let r = newSymbol(s.text + suffix)
-      quantifiedSymbols[sq] = r
-      citronRules.append((q == "+" ? [r, unquantified] : [r], s.position))
-      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
-      return r
+      return quantifiedSymbol(
+        symbol(s), q, key: String(s.text + String(q)), position: t.position)
       
-    case .quantified(.literal(let text, let p), let q, _):
-      let sq = text + String(q)
-      let unquantified = literalName(text)
-      if let r = quantifiedSymbols[sq] { return r }
+    case .quantified(.literal(let text, _), let q, _):
+      return quantifiedSymbol(
+        literalName(text), q, key: text + String(q), position: t.position)
+      
+    case .quantified(let u, let q, _):
+      let unquantified = term(u, citronLHS: citronLHS)
       let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
       let r = newSymbol(unquantified + suffix)
-      quantifiedSymbols[sq] = r
-      citronRules.append((q == "+" ? [r, unquantified] : [r], p))
-      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
-      
-      return r
-      
-    case .quantified(let t1, let q, _):
-      let unquantified = term(t1, citronLHS: citronLHS)
-      let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
-      let r = newSymbol(unquantified + suffix)
-      citronRules.append((q == "+" ? [r, unquantified] : [r], t1.position))
+      citronRules.append((q == "+" ? [r, unquantified] : [r], u.position))
       citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
       return r
     }
   }
 
+  mutating func quantifiedSymbol(
+    _ u: String, _ q: Character, key: String, position: SourceRegion
+  ) -> String {
+    if let r = quantifiedSymbols[key] { return r }
+    let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
+    let r = newSymbol(u + suffix)
+    quantifiedSymbols[key] = r
+    citronRules.append((q == "+" ? [r, u] : [r], position))
+    citronRules.append((q == "?" ? [r, u] : [r, r, u], position))
+    return r
+  }
+  
   var description: String {
     citronRules.lazy.map {
       "\($0.0.first!) ::= \($0.0.dropFirst().joined(separator: " ")). {}"
