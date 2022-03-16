@@ -102,32 +102,26 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     case .literal(let l, _):
       return literalName(l)
 
-    // FIXME: Nix the horrible code duplication in quantifier handling.
     case .quantified(.symbol(let s), let q, _):
-      return quantifiedSymbol(
-        symbol(s), q, key: String(s.text + String(q)), position: t.position)
+      return quantified(
+        symbol(s), q, position: t.position, key: String(s.text + String(q)))
       
     case .quantified(.literal(let text, _), let q, _):
-      return quantifiedSymbol(
-        literalName(text), q, key: text + String(q), position: t.position)
+      return quantified(
+        literalName(text), q, position: t.position, key: text + String(q))
       
     case .quantified(let u, let q, _):
-      let unquantified = term(u, citronLHS: citronLHS)
-      let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
-      let r = newSymbol(unquantified + suffix)
-      citronRules.append((q == "+" ? [r, unquantified] : [r], u.position))
-      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
-      return r
+      return quantified(term(u, citronLHS: citronLHS), q, position: t.position)
     }
   }
 
-  mutating func quantifiedSymbol(
-    _ u: String, _ q: Character, key: String, position: SourceRegion
+  mutating func quantified(
+    _ u: String, _ q: Character, position: SourceRegion, key: String? = nil
   ) -> String {
-    if let r = quantifiedSymbols[key] { return r }
+    if let k = key, let r = quantifiedSymbols[k] { return r }
     let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
     let r = newSymbol(u + suffix)
-    quantifiedSymbols[key] = r
+    if let k = key { quantifiedSymbols[k] = r }
     citronRules.append((q == "+" ? [r, u] : [r], position))
     citronRules.append((q == "?" ? [r, u] : [r, r, u], position))
     return r
