@@ -21,9 +21,7 @@ do {
     //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
     try parser.consume(token: Token(id, text, at: position), code: id)
   }
-  let r = Citronized(try parser.endParsing())
-  print("Literals:", r.literals)
-  print(r)
+  print(Citronized(try parser.endParsing()))
 
   
 } catch let e as EBNFParser.UnexpectedTokenError {

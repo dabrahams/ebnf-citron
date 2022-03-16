@@ -81,7 +81,7 @@ fun-argument ::= (IDENT | '_') (IDENT | '_')? (':' type-expr)? ('=' expr)?
 
 member-ctor-decl ::= member-ctor-head fun-signature brace-stmt
 
-member-ctor-head ::= access-modifier* ('init' | 'init?')
+member-ctor-head ::= access-modifier* ('init' | 'init' '?')
 
 member-dtor-decl ::= 'delete' brace-stmt
 
@@ -170,7 +170,7 @@ capture-decl ::= binding-introducer IDENT ('=' expr)?
 
 binding-introducer ::=
     'let'
-  | 'sink let'
+  | 'sink' 'let'
   | 'inout'
   | 'var'
 

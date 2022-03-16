@@ -85,13 +85,25 @@ struct Citronized: CustomStringConvertible {
       
     case .literal(let l, _):
       return literalName(l)
-      
+
+    // FIXME: Nix the horrible code duplication in quantifier handling.
     case .quantified(.symbol(let s), let q, _):
       let sq = String(s.text + String(q))
       let unquantified = symbol(s)
       if let r = quantifiedSymbols[sq] { return r }
       let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
       let r = newSymbol(s.text + suffix)
+      quantifiedSymbols[sq] = r
+      citronRules.append(q == "+" ? [r, unquantified] : [r])
+      citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
+      return r
+      
+    case .quantified(.literal(let text, _), let q, _):
+      let sq = text + String(q)
+      let unquantified = literalName(text)
+      if let r = quantifiedSymbols[sq] { return r }
+      let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
+      let r = newSymbol(unquantified + suffix)
       quantifiedSymbols[sq] = r
       citronRules.append(q == "+" ? [r, unquantified] : [r])
       citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
