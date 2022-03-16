@@ -1,5 +1,3 @@
-import Foundation
-
 struct Citronized: CustomStringConvertible {
   var ebnfToCitron: [Substring: String] = [:]
   var nonTerminals: [String: Substring] = [:]
@@ -17,8 +15,8 @@ struct Citronized: CustomStringConvertible {
     "|": "VBAR",
     "=": "EQUAL",
     "==": "EQUAL_EQUAL",
-    "<": "LT",
-    ">": "GT",
+    "<": "LANGLE",
+    ">": "RANGLE",
     "->": "ARROW",
     "_": "UNDERSCORE",
     ".": "DOT",
@@ -26,22 +24,23 @@ struct Citronized: CustomStringConvertible {
     "::": "COLON_COLON",
     "?": "QUESTION"
   ]
-  var citronRules: [[String]] = []
+  typealias CitronRule = [String]
+  var citronRules: [CitronRule] = []
   var quantifiedSymbols: [String: String] = [:]
   
   init(_ input: EBNF.RuleList) {
     for compoundRule in input {
       for rhs in compoundRule.rhs {
-        citronRules.append(citronRule(compoundRule.lhs, rhs))
+        addCitronRule {
+          $0.citronRule($0.symbol(compoundRule.lhs), rhs)
+        }
       }
     }
-    citronRules.sort { $0.lexicographicallyPrecedes($1) }
   }
 
   mutating func literalName(_ text: String) -> String {
     if let r = literals[text] { return r }
     let upcased = text.uppercased()
-    let validRange = upcased.rangeOfCharacter(from: .uppercaseLetters)
     let r = upcased.allSatisfy { ("A"..."Z").contains($0) }
       ? upcased : "TOK\(literals.count)"
     literals[text] = r
@@ -66,10 +65,16 @@ struct Citronized: CustomStringConvertible {
     if let r = ebnfToCitron[t] { return r }
     return newSymbol(String(t), ebnf: t)
   }
+
+  mutating func addCitronRule(makeRule: (inout Self)->CitronRule)
+  {
+    let marker = citronRules.count
+    citronRules.append([]) 
+    citronRules[marker] = makeRule(&self)
+  }
   
-  mutating func citronRule(_ lhs: Token, _ rhs: EBNF.Alt) -> [String] {
-    let l = symbol(lhs)
-    return [l] + rhs.map { term($0, citronLHS: l) }
+  mutating func citronRule(_ citronLHS: String, _ rhs: EBNF.Alt) -> CitronRule {
+    return [citronLHS] + rhs.map { term($0, citronLHS: citronLHS) }
   }
 
   mutating func term(_ t: EBNF.Term, citronLHS: String) -> String {
@@ -77,7 +82,8 @@ struct Citronized: CustomStringConvertible {
     case .group(let alternatives):
       let group_lhs = newSymbol(citronLHS)
       for rhs in alternatives {
-        citronRules.append([group_lhs] + rhs.map { term($0, citronLHS: group_lhs) })
+        addCitronRule { me in
+          [group_lhs] + rhs.map { me.term($0, citronLHS: group_lhs) } }
       }
       return group_lhs
     case .symbol(let s):
@@ -107,6 +113,7 @@ struct Citronized: CustomStringConvertible {
       quantifiedSymbols[sq] = r
       citronRules.append(q == "+" ? [r, unquantified] : [r])
       citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
+      
       return r
       
     case .quantified(let t, let q, _):
