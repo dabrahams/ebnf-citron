@@ -7,7 +7,7 @@ enum EBNF {
     let rhs: AltList
   }
   typealias AltList = [Alt]
-  typealias Alt = TermList?
+  typealias Alt = TermList
   typealias TermList = [Term]
   typealias Symbol = Token
   

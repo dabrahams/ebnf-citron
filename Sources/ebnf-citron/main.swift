@@ -21,8 +21,11 @@ do {
     //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
     try parser.consume(token: Token(id, text, at: position), code: id)
   }
-  let r: EBNFParser.CitronResult = try parser.endParsing()
-  print(r.dump)
+  let r = Citronized(try parser.endParsing())
+  print("Literals:", r.literals)
+  print(r)
+
+  
 } catch let e as EBNFParser.UnexpectedTokenError {
   print("\(e.token.position): error: Unexpected token \(e.tokenCode)")
   fatalError(file: #filePath)

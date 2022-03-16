@@ -1,6 +1,6 @@
 import CitronLexerModule
 
-struct Token: AST {
+struct Token: AST, Hashable {
   typealias ID = EBNFParser.CitronTokenCode
 
   init(_ id: ID, _ content: Substring, at position: SourceRegion) {
