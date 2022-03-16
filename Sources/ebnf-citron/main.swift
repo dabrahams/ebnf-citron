@@ -1,9 +1,16 @@
 import Foundation
 
-if CommandLine.arguments.count != 2 {
-  fatalError("usage: \(CommandLine.arguments[0]) <EBNF grammar file>", file: #filePath)
+guard CommandLine.arguments.count == 2
+      || CommandLine.arguments.count == 3
+         && CommandLine.arguments[1] == "--debug"
+else {
+  fatalError(
+    "usage: \(CommandLine.arguments[0]) [--debug] <EBNF grammar file>",
+    file: #filePath)
 }
-let sourceFile = CommandLine.arguments[1]
+
+let debug = CommandLine.arguments[1] == "--debug"
+let sourceFile = CommandLine.arguments.last!
 let source: String
 do {
   source = try String(contentsOfFile: sourceFile, encoding: .utf8)
@@ -21,8 +28,8 @@ do {
     //   "\(tokenLocation): note: \(tokenID) \(String(reflecting: tokenText))")
     try parser.consume(token: Token(id, text, at: position), code: id)
   }
-  print(Citronized(try parser.endParsing()))
-
+  let c = Citronized(try parser.endParsing())
+  print(debug ? String(reflecting: c) : String(describing: c))
   
 } catch let e as EBNFParser.UnexpectedTokenError {
   print("\(e.token.position): error: Unexpected token \(e.tokenCode)")

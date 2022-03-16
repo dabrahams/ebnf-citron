@@ -16,6 +16,9 @@ endif
 run: ${CITRON_PARSER}
 	swift run ebnf-citron ${EBNF}
 
+verify: ${CITRON_PARSER}
+	swift run ebnf-citron --debug ${EBNF}
+
 build: ${CITRON_PARSER}
 	swift build --enable-test-discovery ${SWIFT_FLAGS}
 

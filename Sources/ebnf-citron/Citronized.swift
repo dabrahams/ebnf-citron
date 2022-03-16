@@ -1,4 +1,6 @@
-struct Citronized: CustomStringConvertible {
+import CitronLexerModule
+
+struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   var ebnfToCitron: [Substring: String] = [:]
   var nonTerminals: [String: Substring] = [:]
   var literals: [String: String] = [
@@ -25,14 +27,17 @@ struct Citronized: CustomStringConvertible {
     "?": "QUESTION"
   ]
   typealias CitronRule = [String]
-  var citronRules: [CitronRule] = []
+  var citronRules: [(CitronRule, SourceRegion)] = []
   var quantifiedSymbols: [String: String] = [:]
   
   init(_ input: EBNF.RuleList) {
     for compoundRule in input {
       for rhs in compoundRule.rhs {
         addCitronRule {
-          $0.citronRule($0.symbol(compoundRule.lhs), rhs)
+          (
+            $0.citronRule($0.symbol(compoundRule.lhs), rhs),
+            rhs.position
+          )
         }
       }
     }
@@ -66,10 +71,11 @@ struct Citronized: CustomStringConvertible {
     return newSymbol(String(t), ebnf: t)
   }
 
-  mutating func addCitronRule(makeRule: (inout Self)->CitronRule)
+  mutating func addCitronRule(
+    _ makeRule: (inout Self)->(CitronRule, SourceRegion))
   {
     let marker = citronRules.count
-    citronRules.append([]) 
+    citronRules.append(([], .empty))
     citronRules[marker] = makeRule(&self)
   }
   
@@ -83,7 +89,11 @@ struct Citronized: CustomStringConvertible {
       let group_lhs = newSymbol(citronLHS)
       for rhs in alternatives {
         addCitronRule { me in
-          [group_lhs] + rhs.map { me.term($0, citronLHS: group_lhs) } }
+          (
+            [group_lhs] + rhs.map { me.term($0, citronLHS: group_lhs) },
+            rhs.position
+          )
+        }
       }
       return group_lhs
     case .symbol(let s):
@@ -100,35 +110,42 @@ struct Citronized: CustomStringConvertible {
       let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
       let r = newSymbol(s.text + suffix)
       quantifiedSymbols[sq] = r
-      citronRules.append(q == "+" ? [r, unquantified] : [r])
-      citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
+      citronRules.append((q == "+" ? [r, unquantified] : [r], s.position))
+      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
       return r
       
-    case .quantified(.literal(let text, _), let q, _):
+    case .quantified(.literal(let text, let p), let q, _):
       let sq = text + String(q)
       let unquantified = literalName(text)
       if let r = quantifiedSymbols[sq] { return r }
       let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
       let r = newSymbol(unquantified + suffix)
       quantifiedSymbols[sq] = r
-      citronRules.append(q == "+" ? [r, unquantified] : [r])
-      citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
+      citronRules.append((q == "+" ? [r, unquantified] : [r], p))
+      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
       
       return r
       
-    case .quantified(let t, let q, _):
-      let unquantified = term(t, citronLHS: citronLHS)
+    case .quantified(let t1, let q, _):
+      let unquantified = term(t1, citronLHS: citronLHS)
       let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
       let r = newSymbol(unquantified + suffix)
-      citronRules.append(q == "+" ? [r, unquantified] : [r])
-      citronRules.append(q == "?" ? [r, unquantified] : [r, r, unquantified])
+      citronRules.append((q == "+" ? [r, unquantified] : [r], t1.position))
+      citronRules.append((q == "?" ? [r, unquantified] : [r, r, unquantified], t.position))
       return r
     }
   }
 
   var description: String {
     citronRules.lazy.map {
-      "\($0.first!) ::= \($0.dropFirst().joined(separator: " "))\n. {}"
+      "\($0.0.first!) ::= \($0.0.dropFirst().joined(separator: " ")). {}"
+    }.joined(separator: "\n\n")
+  }
+
+  var debugDescription: String {
+    citronRules.lazy.map {
+      "\($0.1): note:\n" +
+      "\($0.0.first!) ::= \($0.0.dropFirst().joined(separator: " ")). {}"
     }.joined(separator: "\n\n")
   }
 }
