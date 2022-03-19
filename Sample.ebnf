@@ -234,7 +234,7 @@ fun-type-expr ::= 'mutating'? fun-type-env? tuple-type-expr '->' 'noescape'? typ
 
 fun-type-env ::=
     ('[' type-expr ']')
-  | thin
+  | 'thin'
 
 param-type-expr ::= param-convention? type-expr
 
@@ -343,7 +343,7 @@ call-tail ::= '(' call-argument-list? ')'
 
 call-argument-list ::= call-argument (',' call-argument)*
 
-call-argument ::= (IDENT ':') expr
+call-argument ::= IDENT ':' expr
 
 subscript-tail ::= '[' call-argument-list? ']'
 

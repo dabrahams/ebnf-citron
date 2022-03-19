@@ -1,5 +1,10 @@
 import CitronLexerModule
 
+extension String {
+  var isAllUpper: Bool {
+    return allSatisfy { ("A"..."Z").contains($0) || $0 == "-" || $0 == "_" }
+  }
+}
 struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   var ebnfToCitron: [Substring: String] = [:]
   var nonTerminals: [String: Substring] = [:]
@@ -46,14 +51,16 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   mutating func literalName(_ text: String) -> String {
     if let r = literals[text] { return r }
     let upcased = text.uppercased()
-    let r = upcased.allSatisfy { ("A"..."Z").contains($0) }
-      ? upcased : "TOK\(literals.count)"
+    let r = upcased.isAllUpper ? upcased : "TOK\(literals.count)"
     literals[text] = r
     return r
   }
   
   mutating func newSymbol(_ root: String, ebnf: Substring = "") -> String {
-    let normalizedRoot = root.replacingOccurrences(of: "-", with: "_")
+    let normalizedRoot = (
+      root.isAllUpper ? root : root.lowercased()
+    ).replacingOccurrences(of: "-", with: "_")
+    
     for suffix in 0...20 {
       let r = suffix == 0 ? normalizedRoot : "\(normalizedRoot)_\(suffix)"
       if nonTerminals[r] == nil {
@@ -128,15 +135,19 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   }
   
   var description: String {
-    citronRules.lazy.map {
-      "\($0.0.first!) ::= \($0.0.dropFirst().joined(separator: " ")). {}"
-    }.joined(separator: "\n\n")
+    citronRules.enumerated().lazy.map { i, r in
+      let p = i == 0 ? ""
+        : citronRules[i-1].0.first == r.0.first ? "\n" : "\n\n"
+      return "\(p)\(r.0.first!) ::= \(r.0.dropFirst().joined(separator: " ")). {}"
+    }.joined()
   }
 
   var debugDescription: String {
-    citronRules.lazy.map {
-      "\($0.1): note:\n" +
-      "\($0.0.first!) ::= \($0.0.dropFirst().joined(separator: " ")). {}"
-    }.joined(separator: "\n\n")
+    citronRules.enumerated().lazy.map { i, r in
+      let p = i == 0 ? ""
+        : citronRules[i-1].0.first == r.0.first ? "\n" : "\n\n"
+      return "\(p)\(r.1): note:\n" +
+        "\(r.0.first!) ::= \(r.0.dropFirst().joined(separator: " ")). {}"
+    }.joined()
   }
 }
