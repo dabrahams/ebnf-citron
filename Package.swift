@@ -12,6 +12,8 @@ let package = Package(
     name: "ebnf-citron",
     products: [
       .executable(name: "ebnf-citron", targets: ["ebnf-citron"]),
+      .plugin(
+        name: "RunCitron", targets: ["RunCitron"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -24,10 +26,25 @@ let package = Package(
         .executableTarget(
             name: "ebnf-citron",
             dependencies: [CitronParser, CitronLexer],
-            exclude: ["EBNFGrammar.citron"]
+
+            plugins: [
+              .plugin(
+                name: "RunCitron"
+
+                // Comes from this very pacakge; how do I express that?  Not this way:
+                //, package: "ebnf-citron"
+              ),
+            ]
+
         ),
         .testTarget(
             name: "ebnf-citronTests",
             dependencies: ["ebnf-citron", CitronParser, CitronLexer]),
+        .plugin(
+            name: "RunCitron",
+            capability: .buildTool(),
+            dependencies: [
+               .product(name: "citron", package: "citron"),
+            ])
     ]
 )
