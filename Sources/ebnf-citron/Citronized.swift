@@ -6,8 +6,16 @@ extension String {
   }
 }
 struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
+  /// A mapping from EBNF symbol name to the name used in the generated citron
+  /// grammar.
   var ebnfToCitron: [Substring: String] = [:]
+
+  /// A mapping from citron symbol name to EBNF symbol name, or to a placeholder
+  /// string if the citron symbol was synthesized (e.g. "foo_opt" from foo?).
   var nonTerminals: [String: Substring] = [:]
+
+  /// A mapping from literal strings in the EBNF sourcde to corresponding citron
+  /// symbol names.
   var literals: [String: String] = [
     "*": "STAR",
     "+": "PLUS",
@@ -31,16 +39,26 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     "::": "COLON_COLON",
     "?": "QUESTION"
   ]
+
+  /// A BNF grammar rule, with the LHS stored in the first position and the RHS in the remainder.
   typealias CitronRule = [String]
+
+  /// The BNF grammar rules, paired with a region of source that describes their
+  /// RHS.
   var citronRules: [(CitronRule, SourceRegion)] = []
+
+  /// A mapping from a string representation of a quantified EBNF symbol,
+  /// e.g. "foo?", to a corresponding synthesized BNF symbol, e.g. "foo-opt".
   var quantifiedSymbols: [String: String] = [:]
-  
+
+  /// Creates a BNF representation of `input` suitable for use as a Citron
+  /// grammar.
   init(_ input: EBNF.RuleList) {
     for compoundRule in input {
       for rhs in compoundRule.rhs {
         addCitronRule {
           (
-            $0.citronRule($0.symbol(compoundRule.lhs), rhs),
+            $0.citronRule($0.bnfSymbol(compoundRule.lhs), rhs),
             rhs.position
           )
         }
@@ -48,6 +66,8 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     }
   }
 
+  /// Returns a valid citron token name corresponding to the given text,
+  /// generating one if necessary.
   mutating func literalName(_ text: String) -> String {
     if let r = literals[text] { return r }
     let upcased = text.uppercased()
@@ -55,27 +75,36 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     literals[text] = r
     return r
   }
-  
-  mutating func newSymbol(_ root: String, ebnf: Substring = "") -> String {
+
+  /// Returns a new BNF nonterminal symbol name based on the given `root` name,
+  /// memoizing the mapping if `rootIsEBNF` is true.
+  mutating func newSymbol(
+    root: String, rootIsEBNF: Bool = false
+  ) -> String {
     let normalizedRoot = (
       root.isAllUpper ? root : root.lowercased()
     ).replacingOccurrences(of: "-", with: "_")
-    
+
+    // Try up to 20 numerical suffixes if the normalizedRoot is already taken.
     for suffix in 0...20 {
       let r = suffix == 0 ? normalizedRoot : "\(normalizedRoot)_\(suffix)"
       if nonTerminals[r] == nil {
-        if !ebnf.isEmpty { ebnfToCitron[ebnf] = r }
-        nonTerminals[r] = ebnf
+        if rootIsEBNF { ebnfToCitron[root[...]] = r }
+        nonTerminals[r] = rootIsEBNF ? root[...] : "<synthesized>"
         return r
       }
     }
     fatalError("More than 20?!")
   }
-  
-  mutating func symbol(_ ebnfSymbol: Token) -> String {
-    let t = ebnfSymbol.text
-    if let r = ebnfToCitron[t] { return r }
-    return newSymbol(String(t), ebnf: t)
+
+  /// Returns the BNF nonterminal symbol name corresponding to the given ebnf
+  /// name, generating a new name if necessary.
+  mutating func bnfSymbol(_ ebnfSymbol: Token) -> String {
+    let ebnfName = ebnfSymbol.text
+    if let r = ebnfToCitron[ebnfName] { return r }
+    let r = newSymbol(root: String(ebnfName), rootIsEBNF: true)
+    ebnfToCitron[ebnfName] = r
+    return r
   }
 
   mutating func addCitronRule(
@@ -93,7 +122,7 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   mutating func term(_ t: EBNF.Term, citronLHS: String) -> String {
     switch t {
     case .group(let alternatives):
-      let group_lhs = newSymbol(citronLHS)
+      let group_lhs = newSymbol(root: citronLHS)
       for rhs in alternatives {
         addCitronRule { me in
           (
@@ -104,14 +133,14 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
       }
       return group_lhs
     case .symbol(let s):
-      return symbol(s)
+      return bnfSymbol(s)
       
     case .literal(let l, _):
       return literalName(l)
 
     case .quantified(.symbol(let s), let q, _):
       return quantified(
-        symbol(s), q, position: t.position, key: String(s.text + String(q)))
+        bnfSymbol(s), q, position: t.position, key: String(s.text + String(q)))
       
     case .quantified(.literal(let text, _), let q, _):
       return quantified(
@@ -127,7 +156,7 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   ) -> String {
     if let k = key, let r = quantifiedSymbols[k] { return r }
     let suffix = ["?": "-opt", "*": "-list", "+": "-list1"][q]!
-    let r = newSymbol(u + suffix)
+    let r = newSymbol(root: u + suffix)
     if let k = key { quantifiedSymbols[k] = r }
     citronRules.append((q == "+" ? [r, u] : [r], position))
     citronRules.append((q == "?" ? [r, u] : [r, r, u], position))
