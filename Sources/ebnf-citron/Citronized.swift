@@ -56,12 +56,13 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   init(_ input: EBNF.RuleList) {
     for compoundRule in input {
       for rhs in compoundRule.rhs {
-        addCitronRule {
+        let bnfLHS = bnfSymbol(compoundRule.lhs)
+        citronRules.append(
           (
-            $0.citronRule($0.bnfSymbol(compoundRule.lhs), rhs),
+            [bnfLHS] + rhs.map { term($0, citronLHS: bnfLHS) },
             rhs.position
           )
-        }
+        )
       }
     }
   }
@@ -98,7 +99,8 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
   }
 
   /// Returns the BNF nonterminal symbol name corresponding to the given ebnf
-  /// name, generating a new name if necessary.
+  /// symbol, generating a new name and memoizing the correspondence if
+  /// necessary.
   mutating func bnfSymbol(_ ebnfSymbol: Token) -> String {
     let ebnfName = ebnfSymbol.text
     if let r = ebnfToCitron[ebnfName] { return r }
@@ -107,37 +109,31 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     return r
   }
 
-  mutating func addCitronRule(
-    _ makeRule: (inout Self)->(CitronRule, SourceRegion))
-  {
-    let marker = citronRules.count
-    citronRules.append(([], .empty))
-    citronRules[marker] = makeRule(&self)
-  }
-  
-  mutating func citronRule(_ citronLHS: String, _ rhs: EBNF.Alt) -> CitronRule {
-    return [citronLHS] + rhs.map { term($0, citronLHS: citronLHS) }
-  }
-
+  /// Returns the BNF symbol name corresponding to `t` as should appear in the
+  /// context of a BNF rule defining `citronLHS`.
   mutating func term(_ t: EBNF.Term, citronLHS: String) -> String {
     switch t {
     case .group(let alternatives):
+
+      // Synthesize a symbol for the group.
       let group_lhs = newSymbol(root: citronLHS)
       for rhs in alternatives {
-        addCitronRule { me in
+        citronRules.append(
           (
-            [group_lhs] + rhs.map { me.term($0, citronLHS: group_lhs) },
+            [group_lhs] + rhs.map { term($0, citronLHS: group_lhs) },
             rhs.position
-          )
-        }
+          ))
       }
       return group_lhs
+
     case .symbol(let s):
       return bnfSymbol(s)
       
     case .literal(let l, _):
       return literalName(l)
 
+    // quantified symbols and literals get a symbol name based on the underlying
+    // thing.
     case .quantified(.symbol(let s), let q, _):
       return quantified(
         bnfSymbol(s), q, position: t.position, key: String(s.text + String(q)))
@@ -151,6 +147,8 @@ struct Citronized: CustomStringConvertible, CustomDebugStringConvertible {
     }
   }
 
+  /// Returns the BNF symbol corresponding to quantifying the BNF symbol `u`
+  /// with `q`, with the EBNF source appearing at `position`.
   mutating func quantified(
     _ u: String, _ q: Character, position: SourceRegion, key: String? = nil
   ) -> String {
